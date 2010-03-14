@@ -59,43 +59,81 @@
 			
 			var change = function(event) {
 				var item = state.item;
-				var target, next, top = event.pageY;
+				var x = event.pageX;
+				var y = event.pageY;
+				var target, next, top = y;
 				var a = item.height();
 				var b = item.offset().top;
 				var prev = item.prev();
-				
-				state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
-				state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
-				
-				// Move up
-				if(top < state.min) {
-					target = item.prev(settings.items);
-					
-					while(true) {
-						state.delta--;
-						next = target.prev(settings.items);
-						
-						if(next.length === 0 || top >= (state.min -= next.height())) {
-							item.insertBefore(target); break;
-						}
-						
-						target = next;
-					}
+				var parent = item.parents('ul.selection');
+				var helper = jQuery('div.draghelper');
+				var container = {
+					top: parent.offset().top - settings.distance,
+					left: parent.offset().left - settings.distance,
+					bottom: parent.offset().top + parent.height() + settings.distance,
+					right: parent.offset().left + parent.width() + settings.distance
 				}
 				
-				// Move down
-				else if(top > state.max) {
-					target = item.next(settings.items);
+				// Moving outside the list = dragging
+				if(x < container.left || x > container.right || y < container.top || y > container.bottom) {
+				
+					// Add drag helper
+					if(helper.size() == 0) {
+						var helper = jQuery('<div class="draghelper" />').hide().appendTo(jQuery('body'));
+					}
+					if(helper.is(':hidden')) {
+						helper.html(item.find('img, span').clone());
+						helper.fadeIn('slow');
+					}
 					
-					while(true) {
-						state.delta++;
-						next = target.next(settings.items);
+					// Set helper position
+					helper.css({
+						top: y - 10,
+						left: x - 10 
+					})
+					
+				}
+				
+				// Moving inside the list = ordering
+				else {
+				
+					// Remove drag helper if it exists
+					helper.fadeOut('fast');
+				
+					// State
+					state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
+					state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
+					
+					// Move up
+					if(top < state.min) {
+						target = item.prev(settings.items);
 						
-						if(next.length === 0 || top <= (state.max += next.height())) {
-							item.insertAfter(target); break;
+						while(true) {
+							state.delta--;
+							next = target.prev(settings.items);
+							
+							if(next.length === 0 || top >= (state.min -= next.height())) {
+								item.insertBefore(target); break;
+							}
+							
+							target = next;
 						}
+					}
+					
+					// Move down
+					else if(top > state.max) {
+						target = item.next(settings.items);
 						
-						target = next;
+						while(true) {
+							state.delta++;
+							next = target.next(settings.items);
+							
+							if(next.length === 0 || top <= (state.max += next.height())) {
+								item.insertAfter(target); break;
+							}
+							
+							target = next;
+						}
 					}
 				}
 				
@@ -109,11 +147,19 @@
 				jQuery(document).unbind('mouseup', stop);
 					
 				if(state != null) {
+				
+					var helper = jQuery('div.draghelper');
 	
 					// Trigger click event
-					if(state.coordinate - settings.radius < event.pageY && event.pageY < state.coordinate + settings.radius) {
+					if(state.coordinate - settings.radius < event.pageY && event.pageY < state.coordinate + settings.radius && helper.size() == 0) {
 						settings.click(state.item);
 					}
+					
+					// Remove helper
+					helper.fadeOut('fast', function() {
+						jQuery(this).remove();
+						object.trigger('dragdrop');
+					});
 
 					// Stop dragging
 					object.removeClass('dragging');
@@ -141,13 +187,13 @@
 						
 						// Get handle
 						if(settings.handles) {
-							current.is(settings.handles);
+							if(current.is(settings.handles)) start(current);
 						}
 						else {
 							current = current.parents(settings.items);
+							start(current);
 						}
 
-						start(current);
 					});
 
 				}
