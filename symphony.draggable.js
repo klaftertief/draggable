@@ -37,7 +37,7 @@
 			var object = this;
 			var state = null;
 			
-			var start = function(item) {
+			var start = function(event, item) {
 				
 				// Setup state
 				state = {
@@ -86,7 +86,8 @@
 				
 					// Add drag helper
 					if(helper.size() == 0) {
-						var helper = jQuery('<div class="draghelper" />').hide().appendTo(jQuery('body'));
+						var classes = item.attr('class');
+						var helper = jQuery('<div class="draghelper" />').addClass(classes).hide().appendTo(jQuery('body'));
 					}
 					if(helper.is(':hidden')) {
 						helper.html(item.find('img, span').clone());
@@ -201,17 +202,19 @@
 				
 					// Prepare dragging
 					object.addClass('draggable');
-					object.bind('mousedown', function(event) {				
+					object.bind('mousedown', function(event) {
+						event.preventDefault();
+						event.stopPropagation();		
 						var current = jQuery(event.target);
 						if(current.hasClass('destructor')) return;
 						
 						// Get handle
 						if(settings.handles) {
-							if(current.is(settings.handles)) start(current);
+							if(current.is(settings.handles)) start(event, current);
 						}
 						else {
 							current = current.parents(settings.items);
-							start(current);
+							start(event, current);
 						}
 					});
 				
