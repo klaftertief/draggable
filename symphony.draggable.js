@@ -183,7 +183,7 @@
 								
 					var file = item.find('a.file');
 					var matches = {
-						text: file.find('*').remove().end().text(),
+						text: file.text(),
 						path: file.attr('href')
 					}
 
@@ -198,7 +198,7 @@
 				
 				// Text 
 				else {
-					text = item.find('span').find('*').remove().end().text();
+					text = item.text();
 				}
 				
 				// Replace text
