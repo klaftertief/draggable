@@ -18,6 +18,9 @@
 		var settings = {
 			items:				'li',			// What children do we use as items? 
 			handles:			'*',			// What children do we use as handles? If set to false, items will be used as handles.
+			droppables:			'textarea',		// What elements do we use for dropping items?
+			droppable:			true,
+			orderable:			true,
 			click:				jQuery.noop(),	// Function to be executed on click.
 			radius:				3,				// Click radius.
 			distance:			10,				// Distance for dragging item out of the list.
@@ -75,7 +78,11 @@
 				}
 				
 				// Moving outside the list = dragging
-				if(x < container.left || x > container.right || y < container.top || y > container.bottom) {
+				if(settings.droppable && (x < container.left || x > container.right || y < container.top || y > container.bottom)) {
+
+					// Prepare dropping
+					jQuery(settings.droppables).bind('mouseover', object.draggable.dropover);
+					jQuery(settings.droppables).bind('mouseout', object.draggable.dropout);
 				
 					// Add drag helper
 					if(helper.size() == 0) {
@@ -88,8 +95,8 @@
 					
 					// Set helper position
 					helper.css({
-						top: y - 10,
-						left: x - 10 
+						top: y - 25,
+						left: x + 10 
 					})
 					
 				}
@@ -97,43 +104,47 @@
 				// Moving inside the list = ordering
 				else {
 				
-					// Remove drag helper if it exists
-					helper.fadeOut('fast');
+					if(settings.orderable) {
 				
-					// State
-					state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
-					state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
+						// Remove drag helper if it exists
+						helper.fadeOut('fast');
 					
-					// Move up
-					if(top < state.min) {
-						target = item.prev(settings.items);
+						// State
+						state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
+						state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
 						
-						while(true) {
-							state.delta--;
-							next = target.prev(settings.items);
+						// Move up
+						if(top < state.min) {
+							target = item.prev(settings.items);
 							
-							if(next.length === 0 || top >= (state.min -= next.height())) {
-								item.insertBefore(target); break;
+							while(true) {
+								state.delta--;
+								next = target.prev(settings.items);
+								
+								if(next.length === 0 || top >= (state.min -= next.height())) {
+									item.insertBefore(target); break;
+								}
+								
+								target = next;
 							}
-							
-							target = next;
 						}
-					}
-					
-					// Move down
-					else if(top > state.max) {
-						target = item.next(settings.items);
 						
-						while(true) {
-							state.delta++;
-							next = target.next(settings.items);
+						// Move down
+						else if(top > state.max) {
+							target = item.next(settings.items);
 							
-							if(next.length === 0 || top <= (state.max += next.height())) {
-								item.insertAfter(target); break;
+							while(true) {
+								state.delta++;
+								next = target.next(settings.items);
+								
+								if(next.length === 0 || top <= (state.max += next.height())) {
+									item.insertAfter(target); break;
+								}
+								
+								target = next;
 							}
-							
-							target = next;
 						}
+				
 					}
 				}
 				
@@ -145,6 +156,8 @@
 			var stop = function(event) {
 				jQuery(document).unbind('mousemove', change);
 				jQuery(document).unbind('mouseup', stop);
+				jQuery(settings.droppables).unbind('mouseover', object.draggable.dropover);
+				jQuery(settings.droppables).mouseout();
 					
 				if(state != null) {
 				
@@ -167,6 +180,11 @@
 					object.trigger('dragstop', [state.item]);
 					state = null;
 				}
+
+				// Prepare dropping
+				if(settings.droppable) {
+					jQuery('div.dropper').remove();
+				}
 				
 				return false;
 			};
@@ -180,6 +198,8 @@
 			object.draggable = {
 				
 				initialize: function() {
+				
+					// Prepare dragging
 					object.addClass('draggable');
 					object.bind('mousedown', function(event) {				
 						var current = jQuery(event.target);
@@ -193,11 +213,28 @@
 							current = current.parents(settings.items);
 							start(current);
 						}
-
 					});
-
-				}
 				
+				},
+				
+				dropover: function(event) {
+					var target = jQuery(event.target);
+					var dropper = jQuery('div.dropper');
+					if(dropper.size() == 0) {
+						var dropper = jQuery('<div class="dropper" />').appendTo(jQuery('body'));
+					}
+					dropper.css({
+						width: target.outerWidth(),
+						height: target.outerHeight(),
+						top: target.offset().top,
+						left: target.offset().left
+					});
+				},
+				
+				dropout: function() {
+					jQuery('div.dropper').remove();
+				}
+								
 			};
 			
 			if(settings.delay_initialize !== true) {
