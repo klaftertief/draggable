@@ -24,7 +24,21 @@
 			click:				jQuery.noop(),	// Function to be executed on click.
 			radius:				3,				// Click radius.
 			distance:			10,				// Distance for dragging item out of the list.
-			delay_initialize:	false
+			formatter: {
+				markdown: {
+					image: '![{@text}]({@path})',
+					file: '[{@text}]({@path})'
+				},
+				textile: {
+					image: '!{@path}({@text})!',
+					file: '"{@text}":({@path})'
+				},
+				html: {
+					image: '<img src="{@path}" alt="{@text}" />',
+					file: '<a href="{@path}">{@text}</a>'
+				}
+			},
+ 			delay_initialize:	false
 		};
 		
 		jQuery.extend(settings, custom_settings);
@@ -66,7 +80,7 @@
 				var y = event.pageY;
 				var target, next, top = y;
 				var a = item.height();
-				var b = item.offset().top;
+				var b = item.offset().top || 0;
 				var prev = item.prev();
 				var parent = item.parents('ul.selection');
 				var helper = jQuery('div.draghelper');
@@ -90,13 +104,13 @@
 						var helper = jQuery('<div class="draghelper" />').addClass(classes).hide().appendTo(jQuery('body'));
 					}
 					if(helper.is(':hidden')) {
-						helper.html(item.find('img, span').clone());
+						helper.html(item.find('img, span, a.file, a.image').clone());
 						helper.fadeIn('slow');
 					}
 					
 					// Set helper position
 					helper.css({
-						top: y - 25,
+						top: y - (helper.height() / 2),
 						left: x + 10 
 					})
 					
@@ -154,19 +168,73 @@
 				return false;
 			};
 			
+			var drop = function(item, target) {
+			
+				var text;
+
+				// Remove dropper
+				jQuery('.dropper').mouseout();
+				
+				// Formatter
+				formatter = target.attr('class').match(/(?:markdown)|(?:textile)/) || ['html'];
+				
+				// Image or file
+				if(item.find('.file').size() != 0) {
+								
+					var file = item.find('a.file');
+					var matches = {
+						text: file.find('*').remove().end().text(),
+						path: file.attr('href')
+					}
+
+					// Get type
+					var type = 'file';
+					if(file.hasClass('image')) type = 'image';
+					
+					// Prepare text
+					text = object.draggable.substitute(settings.formatter[formatter.join()][type], matches);
+				
+				}
+				
+				// Text 
+				else {
+					text = item.find('span').find('*').remove().end().text();
+				}
+				
+				// Replace text
+				var start = target[0].selectionStart || 0;
+				var end = target[0].selectionEnd || 0;
+				var original = target.val();
+				target.val(original.substring(0, start) + text + original.substring(end, original.length));
+				target[0].selectionStart = start + text.length;
+				target[0].selectionEnd = start + text.length;
+
+			}
+							
 			var stop = function(event) {
+			
+				var dropper = jQuery('div.dropper').mouseout();
+
 				jQuery(document).unbind('mousemove', change);
 				jQuery(document).unbind('mouseup', stop);
 				jQuery(settings.droppables).unbind('mouseover', object.draggable.dropover);
-				jQuery('.dropper').mouseout();
 					
 				if(state != null) {
 				
 					var helper = jQuery('div.draghelper');
-	
+
 					// Trigger click event
 					if(state.coordinate - settings.radius < event.pageY && event.pageY < state.coordinate + settings.radius && helper.size() == 0) {
 						settings.click(state.item);
+					}
+					
+					// Prepare dropping
+					else {
+						var target = jQuery.data(document, 'target');
+						if(settings.droppable && target !== undefined) {
+							drop(helper, target);
+							dropper.remove();
+						}
 					}
 					
 					// Remove helper
@@ -180,11 +248,6 @@
 					state.item.removeClass('dragging');
 					object.trigger('dragstop', [state.item]);
 					state = null;
-				}
-
-				// Prepare dropping
-				if(settings.droppable) {
-					jQuery('div.dropper').remove();
 				}
 				
 				return false;
@@ -223,6 +286,8 @@
 				dropover: function(event) {
 					var target = jQuery(event.target);
 					var dropper = jQuery('div.dropper').hide();
+					
+					// Add drop area
 					if(dropper.size() == 0) {
 						var dropper = jQuery('<div class="dropper" />').hide().appendTo(jQuery('body'));
 					}
@@ -232,12 +297,26 @@
 						top: target.offset().top,
 						left: target.offset().left
 					}).fadeIn(250);
+					
+										
+					// Store related target
+					jQuery.data(document, 'target', target);
+					
 				},
 				
 				dropout: function() {
 					jQuery('div.dropper').remove();
+					//jQuery(settings.droppables).unbind('mouseup');
+				},
+				
+				substitute: function(template, matches) {
+					var match;
+					for(match in matches) {
+						template = template.replace('{@' + match + '}', matches[match]);
+					}
+					return template;
 				}
-								
+											
 			};
 			
 			if(settings.delay_initialize !== true) {
