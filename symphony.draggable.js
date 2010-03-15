@@ -82,7 +82,7 @@
 
 					// Prepare dropping
 					jQuery(settings.droppables).bind('mouseover', object.draggable.dropover);
-					jQuery(settings.droppables).bind('mouseout', object.draggable.dropout);
+					jQuery('.dropper').bind('mouseout', object.draggable.dropout);
 				
 					// Add drag helper
 					if(helper.size() == 0) {
@@ -157,7 +157,7 @@
 				jQuery(document).unbind('mousemove', change);
 				jQuery(document).unbind('mouseup', stop);
 				jQuery(settings.droppables).unbind('mouseover', object.draggable.dropover);
-				jQuery(settings.droppables).mouseout();
+				jQuery('.dropper').mouseout();
 					
 				if(state != null) {
 				
@@ -219,16 +219,16 @@
 				
 				dropover: function(event) {
 					var target = jQuery(event.target);
-					var dropper = jQuery('div.dropper');
+					var dropper = jQuery('div.dropper').hide();
 					if(dropper.size() == 0) {
-						var dropper = jQuery('<div class="dropper" />').appendTo(jQuery('body'));
+						var dropper = jQuery('<div class="dropper" />').hide().appendTo(jQuery('body'));
 					}
 					dropper.css({
 						width: target.outerWidth(),
 						height: target.outerHeight(),
 						top: target.offset().top,
 						left: target.offset().left
-					});
+					}).fadeIn(250);
 				},
 				
 				dropout: function() {
