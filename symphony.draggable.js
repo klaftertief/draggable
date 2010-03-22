@@ -20,24 +20,10 @@
 			handles:			'*',			// What children do we use as handles? If set to false, items will be used as handles.
 			droppables:			'textarea',		// What elements do we use for dropping items?
 			droppable:			true,
-			orderable:			true,
+			sortable:			true,
 			click:				jQuery.noop(),	// Function to be executed on click.
 			radius:				3,				// Click radius.
 			distance:			10,				// Distance for dragging item out of the list.
-			formatter: {
-				markdown: {
-					image: '![{@text}]({@path})',
-					file: '[{@text}]({@path})'
-				},
-				textile: {
-					image: '!{@path}({@text})!',
-					file: '"{@text}":({@path})'
-				},
-				html: {
-					image: '<img src="{@path}" alt="{@text}" />',
-					file: '<a href="{@path}">{@text}</a>'
-				}
-			},
  			delay_initialize:	false
 		};
 		
@@ -112,105 +98,59 @@
 					helper.css({
 						top: y - (helper.height() / 2),
 						left: x + 10 
-					})
-					
+					});
+				
 				}
 				
-				// Moving inside the list = ordering
-				else {
+				// Moving inside the list = sorting
+				else if(settings.sortable) {
+
+					// Remove drag helper if it exists
+					helper.fadeOut('fast');
 				
-					if(settings.orderable) {
-				
-						// Remove drag helper if it exists
-						helper.fadeOut('fast');
+					// State
+					state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
+					state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
 					
-						// State
-						state.min = Math.min(b, a + (prev.size() > 0 ? prev.offset().top : -Infinity));
-						state.max = Math.max(a + b, b + (item.next().height() ||  Infinity));
+					// Move up
+					if(top < state.min) {
+						target = item.prev(settings.items);
 						
-						// Move up
-						if(top < state.min) {
-							target = item.prev(settings.items);
+						while(true) {
+							state.delta--;
+							next = target.prev(settings.items);
 							
-							while(true) {
-								state.delta--;
-								next = target.prev(settings.items);
-								
-								if(next.length === 0 || top >= (state.min -= next.height())) {
-									item.insertBefore(target); break;
-								}
-								
-								target = next;
+							if(next.length === 0 || top >= (state.min -= next.height())) {
+								item.insertBefore(target); break;
 							}
-						}
-						
-						// Move down
-						else if(top > state.max) {
-							target = item.next(settings.items);
 							
-							while(true) {
-								state.delta++;
-								next = target.next(settings.items);
-								
-								if(next.length === 0 || top <= (state.max += next.height())) {
-									item.insertAfter(target); break;
-								}
-								
-								target = next;
-							}
+							target = next;
 						}
-				
 					}
+					
+					// Move down
+					else if(top > state.max) {
+						target = item.next(settings.items);
+						
+						while(true) {
+							state.delta++;
+							next = target.next(settings.items);
+							
+							if(next.length === 0 || top <= (state.max += next.height())) {
+								item.insertAfter(target); break;
+							}
+							
+							target = next;
+						}
+					}
+					
 				}
 				
 				object.trigger('dragchange', [state.item]);
 				
 				return false;
 			};
-			
-			var drop = function(item, target) {
-			
-				var text;
-
-				// Remove dropper
-				jQuery('.dropper').mouseout();
-				
-				// Formatter
-				formatter = target.attr('class').match(/(?:markdown)|(?:textile)/) || ['html'];
-				
-				// Image or file
-				if(item.find('.file').size() != 0) {
-								
-					var file = item.find('a.file');
-					var matches = {
-						text: file.text(),
-						path: file.attr('href')
-					}
-
-					// Get type
-					var type = 'file';
-					if(file.hasClass('image')) type = 'image';
-					
-					// Prepare text
-					text = object.draggable.substitute(settings.formatter[formatter.join()][type], matches);
-				
-				}
-				
-				// Text 
-				else {
-					text = item.text();
-				}
-				
-				// Replace text
-				var start = target[0].selectionStart || 0;
-				var end = target[0].selectionEnd || 0;
-				var original = target.val();
-				target.val(original.substring(0, start) + text + original.substring(end, original.length));
-				target[0].selectionStart = start + text.length;
-				target[0].selectionEnd = start + text.length;
-
-			}
-							
+											
 			var stop = function(event) {
 			
 				var dropper = jQuery('div.dropper').mouseout();
@@ -232,7 +172,8 @@
 					else {
 						var target = jQuery.data(document, 'target');
 						if(settings.droppable && target !== undefined) {
-							drop(helper, target);
+							console.log('droptarget', target);
+							target.trigger('drop', [helper]);
 							dropper.remove();
 						}
 					}
@@ -301,20 +242,10 @@
 										
 					// Store related target
 					jQuery.data(document, 'target', target);
-					
 				},
 				
 				dropout: function() {
 					jQuery('div.dropper').remove();
-					//jQuery(settings.droppables).unbind('mouseup');
-				},
-				
-				substitute: function(template, matches) {
-					var match;
-					for(match in matches) {
-						template = template.replace('{@' + match + '}', matches[match]);
-					}
-					return template;
 				}
 											
 			};
