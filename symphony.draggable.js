@@ -80,7 +80,7 @@
 				var y = event.pageY;
 				var target, next, top = y;
 				var a = item.height();
-				var b = item.offset().top || 0;
+				var b = item.offset().top;
 				var prev = item.prev();
 				var parent = item.parents('ul.selection');
 				var helper = jQuery('div.draghelper');
@@ -276,7 +276,7 @@
 							if(current.is(settings.handles)) start(event, current);
 						}
 						else {
-							current = current.parents(settings.items);
+							if(!current.is(settings.items)) current = current.parents(settings.items);
 							start(event, current);
 						}
 					});
