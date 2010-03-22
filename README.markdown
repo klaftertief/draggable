@@ -2,7 +2,7 @@
 
 A jQuery plugin for Symphony which enables sorting, dragging and dropping of list items.
 
-- Version: 1.0
+- Version: 1.0.1
 - Date: 22nd March 2010
 - Requirements: Symphony CMS 2.0.8 or newer, <http://github.com/symphony/symphony-2>
 - Author: Nils Hörrmann, post@nilshoerrmann.de
@@ -33,6 +33,10 @@ The third argument (`false`) makes sure that it is only added to the page head i
 
 
 ## Change Log
+
+**Version 1.0.1: 22nd March 2010**
+
+- Remove Subsection Manager related code.
 
 **Version 1.0: 22nd March 2010** 
 

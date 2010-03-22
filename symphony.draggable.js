@@ -19,12 +19,12 @@
 			items:				'li',			// What children do we use as items? 
 			handles:			'*',			// What children do we use as handles? If set to false, items will be used as handles.
 			droppables:			'textarea',		// What elements do we use for dropping items?
-			droppable:			true,
-			sortable:			true,
-			click:				jQuery.noop(),	// Function to be executed on click.
+			droppable:			true,			// Can items be dropped?
+			sortable:			true,			// Can items be sorted?
+			click:				jQuery.noop(),	// Function to be executed on click
 			radius:				3,				// Click radius.
 			distance:			10,				// Distance for dragging item out of the list.
- 			delay_initialize:	false
+			delay_initialize:	false
 		};
 		
 		jQuery.extend(settings, custom_settings);
@@ -90,7 +90,7 @@
 						var helper = jQuery('<div class="draghelper" />').addClass(classes).hide().appendTo(jQuery('body'));
 					}
 					if(helper.is(':hidden')) {
-						helper.html(item.find('img, span, a.file, a.image').clone());
+						helper.html(item[0].innerHTML);
 						helper.fadeIn('slow');
 					}
 					
@@ -237,7 +237,6 @@
 						top: target.offset().top,
 						left: target.offset().left
 					}).fadeIn(250);
-					
 										
 					// Store related target
 					jQuery.data(document, 'target', target);
