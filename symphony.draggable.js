@@ -172,7 +172,6 @@
 					else {
 						var target = jQuery.data(document, 'target');
 						if(settings.droppable && target !== undefined) {
-							console.log('droptarget', target);
 							target.trigger('drop', [helper]);
 							dropper.remove();
 						}
